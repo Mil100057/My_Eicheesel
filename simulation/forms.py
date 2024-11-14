@@ -1,5 +1,12 @@
 from django import forms
+from django.core.exceptions import ValidationError
+from django.db import transaction
 from .models import Simulation, Category, RealAccountData, Stock, Portfolio, Position, Transaction, AnnualInflationRate
+from decimal import Decimal
+import csv
+import io
+from typing import List, Dict, Any, Optional
+
 
 
 class CategoryForm(forms.ModelForm):
@@ -218,3 +225,103 @@ class TransactionForm(forms.ModelForm):
             }),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
+
+class SimulationCSVImportForm(forms.Form):
+    csv_file = forms.FileField(
+        label='Fichier CSV',
+        help_text='Le fichier doit contenir les colonnes: categorie, nom_compte, montant_initial, currency, taux_rentabilite, periode, annee_depart, montant_fixe_annuel'
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_csv_file(self) -> List[Dict[str, Any]]:
+        csv_file = self.cleaned_data['csv_file']
+
+        if not csv_file.name.endswith('.csv'):
+            raise ValidationError("Le fichier doit être au format CSV")
+
+        # Read and validate CSV content
+        try:
+            decoded_file = csv_file.read().decode('utf-8')
+            csv_data = csv.DictReader(io.StringIO(decoded_file), delimiter=';')
+
+            required_fields = {
+                'categorie', 'nom_compte', 'montant_initial', 'currency',
+                'taux_rentabilite', 'periode', 'annee_depart', 'montant_fixe_annuel'
+            }
+
+            if not required_fields.issubset(csv_data.fieldnames):
+                missing_fields = required_fields - set(csv_data.fieldnames)
+                raise ValidationError(f"Colonnes manquantes: {', '.join(missing_fields)}")
+
+            processed_data = []
+            for row_num, row in enumerate(csv_data, start=2):  # start=2 because row 1 is headers
+                try:
+                    # Validate and convert data types
+                    processed_row = {
+                        'categorie': row['categorie'].strip(),
+                        'nom_compte': row['nom_compte'].strip(),
+                        'montant_initial': Decimal(row['montant_initial'].replace(',', '.')),
+                        'currency': row['currency'].strip(),
+                        'taux_rentabilite': float(row['taux_rentabilite'].replace(',', '.')),
+                        'periode': int(row['periode']),
+                        'annee_depart': int(row['annee_depart']),
+                        'montant_fixe_annuel': Decimal(row['montant_fixe_annuel'].replace(',', '.'))
+                    }
+
+                    # Validate category exists
+                    if not Category.objects.filter(category=processed_row['categorie']).exists():
+                        raise ValidationError(f"Catégorie invalide à la ligne {row_num}: {processed_row['categorie']}")
+
+                    # Validate currency
+                    if processed_row['currency'] not in dict(Simulation.CURRENCY_TYPE):
+                        raise ValidationError(f"Devise invalide à la ligne {row_num}: {processed_row['currency']}")
+
+                    processed_data.append(processed_row)
+
+                except (ValueError, TypeError) as e:
+                    raise ValidationError(f"Erreur de format à la ligne {row_num}: {str(e)}")
+
+            return processed_data
+
+        except UnicodeDecodeError:
+            raise ValidationError("Le fichier n'est pas encodé en UTF-8")
+        except csv.Error as e:
+            raise ValidationError(f"Erreur lors de la lecture du CSV: {str(e)}")
+
+    def save(self) -> List[Simulation]:
+        """Save the imported simulations to the database."""
+        if not self.user:
+            raise ValueError("User must be set to save simulations")
+
+        processed_data = self.cleaned_data['csv_file']
+        simulations = []
+
+        try:
+            with transaction.atomic():
+                for row in processed_data:
+                    category = Category.objects.get(category=row['categorie'])
+                    simulation = Simulation(
+                        user=self.user,
+                        categorie=category,
+                        nom_compte=row['nom_compte'],
+                        montant_initial=row['montant_initial'],
+                        currency=row['currency'],
+                        taux_rentabilite=row['taux_rentabilite'],
+                        periode=row['periode'],
+                        annee_depart=row['annee_depart'],
+                        montant_fixe_annuel=row['montant_fixe_annuel']
+                    )
+                    simulation.full_clean()  # Validate the model
+                    simulations.append(simulation)
+
+                # Bulk create all simulations
+                Simulation.objects.bulk_create(simulations)
+
+        except Exception as e:
+            raise ValidationError(f"Erreur lors de la sauvegarde des simulations: {str(e)}")
+
+        return simulations

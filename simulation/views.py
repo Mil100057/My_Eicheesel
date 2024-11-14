@@ -4,8 +4,10 @@ from typing import Tuple, List, TypedDict, Optional
 import json
 import logging
 import csv
+import io
 from django.contrib.auth.decorators import login_required
-from django.core.checks import messages
+from django.contrib import messages
+#from django.core.checks import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.db.models import  QuerySet
@@ -13,7 +15,7 @@ from django.core.exceptions import ValidationError, PermissionDenied
 from django.views.decorators.http import require_http_methods
 from django.db import transaction
 from .forms import SimulationForm, RealDataForm, PortfolioForm, PositionForm, TransactionForm, StockForm, \
-    AnnualInflationRateForm
+    AnnualInflationRateForm, SimulationCSVImportForm
 from .models import Simulation, Category, ConsolidatedResult, RealAccountData, Portfolio, Position, Transaction, Stock, \
     AnnualInflationRate
 
@@ -30,11 +32,11 @@ def category(request: HttpRequest) -> HttpResponse:
         try:
             # Vérifier si la catégorie existe déjà
             if Category.objects.filter(category=category_name).exists():
-                messages.Warning(request, "Cette catégorie existe déjà.")
+                messages.warning(request, "Cette catégorie existe déjà.")
             else:
                 # Créer la nouvelle catégorie
                 Category.objects.create(category=category_name)
-                messages.Warning(request, "Catégorie ajoutée avec succès.")
+                messages.success(request, "Catégorie ajoutée avec succès.")
 
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
@@ -44,7 +46,7 @@ def category(request: HttpRequest) -> HttpResponse:
 
         except Exception as e:
             logger.error(f"Error creating category: {str(e)}")
-            messages.Warning(request, "Une erreur est survenue lors de la création de la catégorie.")
+            messages.error(request, "Une erreur est survenue lors de la création de la catégorie.")
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     "status": "error",
@@ -286,7 +288,7 @@ def simulation(request: HttpRequest) -> HttpResponse:
                 chart_labels, chart_data = prepare_chart_data_base(consolidated_results)
 
                 # Show success message
-                messages.Warning(request, "Simulation créée avec succès")
+                messages.success(request, "Simulation créée avec succès")
 
                 return render(request, 'resultats.html', {
                     'consolidated_results': consolidated_results,
@@ -309,7 +311,7 @@ def simulation(request: HttpRequest) -> HttpResponse:
         form.add_error(None, "Une erreur inattendue est survenue")
         return render(request, 'simulation.html', {'form': form})
 
-    return render(request, 'simulation.html', {'form': form})
+    #return render(request, 'simulation.html', {'form': form})
 
 
 def validate_simulation_inputs(simulation: Simulation) -> bool:
@@ -374,7 +376,7 @@ def results_list_by_cat(request: HttpRequest) -> HttpResponse:
 
     except Exception as e:
         logger.error(f"Error in results_list_by_cat for user {request.user.id}: {str(e)}", exc_info=True)
-        messages.Warning(request, "Une erreur est survenue lors du traitement des données")
+        messages.error(request, "Une erreur est survenue lors du traitement des données")
 
     context = {
         'categories': categories,
@@ -423,7 +425,7 @@ def results_list_by_name(request: HttpRequest) -> HttpResponse:
 
     except Exception as e:
         logger.error(f"Error in results_list_by_name for user {request.user.id}: {str(e)}", exc_info=True)
-        messages.Warning(request, "Une erreur est survenue lors du traitement des données")
+        messages.error(request, "Une erreur est survenue lors du traitement des données")
 
     context = {
         'account_names': account_names,
@@ -456,11 +458,11 @@ def delete_simulation(request: HttpRequest, simulation_id: int) -> HttpResponse:
             # Delete the simulation
             simulation.delete()
 
-            messages.Warning(request, "Simulation supprimée avec succès")
+            messages.success(request, "Simulation supprimée avec succès")
             return JsonResponse({"status": "success", "message": "Simulation supprimée"})
 
     except PermissionDenied as e:
-        logger.warning(f"Permission denied for user {request.user.id} deleting simulation {simulation_id}: {str(e)}")
+        logger.error(f"Permission denied for user {request.user.id} deleting simulation {simulation_id}: {str(e)}")
         return JsonResponse(
             {"status": "error", "message": str(e)},
             status=403
@@ -521,7 +523,7 @@ def delete_account(request: HttpRequest, account_name: str) -> HttpResponse:
             })
 
     except PermissionDenied as e:
-        logger.warning(
+        logger.error(
             f"Permission denied for user {request.user.id} deleting account {account_name}: {str(e)}"
         )
         return JsonResponse(
@@ -574,29 +576,71 @@ def delete_category(request: HttpRequest, category_name: str) -> HttpResponse:
         }, status=500)
 
 
-def export_results_to_csv(results, filename_prefix):
-
+def export_results_to_csv(results: QuerySet[ConsolidatedResult], filename_prefix: str) -> HttpResponse:
+    """Export results to CSV file in a format compatible with import."""
     response = HttpResponse(content_type='text/csv')
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     response['Content-Disposition'] = f'attachment; filename="{filename_prefix}_{timestamp}.csv"'
 
     writer = csv.writer(response, delimiter=';')
 
-    # Write headers
-    writer.writerow(['Année', 'Catégorie', 'Nom du compte', 'Montant', 'Devise'])
+    # Write headers matching import format
+    writer.writerow([
+        'categorie', 'nom_compte', 'montant_initial', 'currency',
+        'taux_rentabilite', 'periode', 'annee_depart', 'montant_fixe_annuel'
+    ])
 
-    # Write data rows
+    # Group results by simulation to avoid duplicates
+    processed_simulations = set()
+
     for result in results:
-        writer.writerow([
-            result.annee,
-            result.simulation.categorie.category,
-            result.simulation.nom_compte,
-            int(result.montant),  # Format as integer to remove decimals
-            '€'
-        ])
+        simulation = result.simulation
+        if simulation.id not in processed_simulations:
+            writer.writerow([
+                simulation.categorie.category,
+                simulation.nom_compte,
+                str(simulation.montant_initial).replace('.', ','),
+                simulation.currency,
+                str(simulation.taux_rentabilite).replace('.', ','),
+                simulation.periode,
+                simulation.annee_depart,
+                str(simulation.montant_fixe_annuel).replace('.', ',')
+            ])
+            processed_simulations.add(simulation.id)
 
     return response
 
+@login_required
+def import_simulations(request: HttpRequest) -> HttpResponse:
+    if request.method == 'POST':
+        form = SimulationCSVImportForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    simulations = form.save()
+
+                    # Calculate results for each imported simulation
+                    for simulation in simulations:
+                        try:
+                            calculate_simulation_results(simulation)
+                        except ValidationError as calc_error:
+                            # If calculation fails, rollback entire transaction
+                            raise ValidationError(f"Erreur de calcul pour {simulation.nom_compte}: {str(calc_error)}")
+
+                messages.success(request, f"{len(simulations)} simulation(s) importée(s) et calculée(s) avec succès")
+                return redirect('simulation')
+
+            except ValidationError as e:
+                messages.error(request, str(e))
+        else:
+            for error in form.non_field_errors():
+                messages.error(request, error)
+    else:
+        form = SimulationCSVImportForm()
+
+    return render(request, 'import_simulations.html', {
+        'form': form
+    })
 
 @login_required
 def export_results_by_cat(request: HttpRequest) -> HttpResponse:
@@ -625,7 +669,7 @@ def export_results_by_cat(request: HttpRequest) -> HttpResponse:
 
     except Exception as e:
         logger.error(f"Error exporting category results: {str(e)}", exc_info=True)
-        messages.Warning(request, "Une erreur est survenue lors de l'export")
+        messages.error(request, "Une erreur est survenue lors de l'export")
         return redirect('results_list_by_cat')
 
 
@@ -656,7 +700,7 @@ def export_results_by_name(request: HttpRequest) -> HttpResponse:
 
     except Exception as e:
         logger.error(f"Error exporting account results: {str(e)}", exc_info=True)
-        messages.Warning(request, "Une erreur est survenue lors de l'export")
+        messages.error(request, "Une erreur est survenue lors de l'export")
         return redirect('results_list_by_name')
 
 
@@ -699,11 +743,11 @@ def compare_real_data(request: HttpRequest) -> HttpResponse:
                             )
 
                             action = "créées" if created else "mises à jour"
-                            messages.Warning(request, f"Données réelles {action} avec succès")
+                            messages.success(request, f"Données réelles {action} avec succès")
 
                     except Exception as e:
                         logger.error(f"Error saving real data: {str(e)}")
-                        messages.Warning(request, "Une erreur est survenue lors de la sauvegarde des données")
+                        messages.error(request, "Une erreur est survenue lors de la sauvegarde des données")
 
                     return redirect(f'{request.path}?account={selected_account}&inflation={show_inflation}')
 
@@ -796,10 +840,10 @@ def compare_real_data(request: HttpRequest) -> HttpResponse:
             })
 
         except Simulation.DoesNotExist:
-            messages.Warning(request, "Compte non trouvé")
+            messages.error(request, "Compte non trouvé")
         except Exception as e:
             logger.error(f"Error in compare_real_data view: {str(e)}", exc_info=True)
-            messages.Warning(request, "Une erreur est survenue")
+            messages.error(request, "Une erreur est survenue")
 
     return render(request, 'compare_real_data.html', {
         'accounts': accounts,
@@ -816,13 +860,82 @@ def delete_real_data(request: HttpRequest, data_id: int) -> HttpResponse:
             raise PermissionDenied
 
         data_entry.delete()
-        messages.Warning(request, "Données supprimées avec succès")
+        messages.success(request, "Données supprimées avec succès")
 
         return JsonResponse({"status": "success"})
     except Exception as e:
         logger.error(f"Error deleting real data: {str(e)}")
         return JsonResponse({"status": "error", "message": str(e)}, status=400)
 
+
+@login_required
+def export_real_data_to_csv(request: HttpRequest) -> HttpResponse:
+    """Export real data and inflation rates to CSV."""
+    response = HttpResponse(content_type='text/csv')
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    response['Content-Disposition'] = f'attachment; filename="real_data_{timestamp}.csv"'
+
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow(['nom_compte', 'annee', 'montant_reel', 'taux_inflation'])
+
+    real_data = RealAccountData.objects.filter(
+        simulation__user=request.user
+    ).select_related('simulation').order_by('simulation__nom_compte', 'annee')
+
+    for entry in real_data:
+        writer.writerow([
+            entry.simulation.nom_compte,
+            entry.annee,
+            str(entry.montant_reel).replace('.', ','),
+            str(entry.taux_inflation).replace('.', ',')
+        ])
+
+    return response
+
+
+@login_required
+def import_real_data(request: HttpRequest) -> HttpResponse:
+    if request.method == 'POST':
+        try:
+            csv_file = request.FILES['csv_file']
+            if not csv_file.name.endswith('.csv'):
+                messages.error(request, "Le fichier doit être au format CSV")
+                return redirect('compare_real_data')
+
+            decoded_file = csv_file.read().decode('utf-8')
+            reader = csv.DictReader(io.StringIO(decoded_file), delimiter=';')
+
+            with transaction.atomic():
+                for row in reader:
+                    try:
+                        simulation = Simulation.objects.get(
+                            nom_compte=row['nom_compte'],
+                            user=request.user
+                        )
+
+                        RealAccountData.objects.update_or_create(
+                            simulation=simulation,
+                            annee=int(row['annee']),
+                            defaults={
+                                'montant_reel': Decimal(row['montant_reel'].replace(',', '.')),
+                                'taux_inflation': Decimal(row['taux_inflation'].replace(',', '.'))
+                            }
+                        )
+                    except Simulation.DoesNotExist:
+                        messages.warning(
+                            request,
+                            f"Compte non trouvé: {row['nom_compte']}"
+                        )
+                    except (ValueError, KeyError) as e:
+                        messages.error(request, f"Erreur de format dans le fichier: {str(e)}")
+                        raise
+
+            messages.success(request, "Données réelles importées avec succès")
+
+        except Exception as e:
+            messages.error(request, f"Erreur lors de l'import: {str(e)}")
+
+    return redirect('compare_real_data')
 
 @login_required
 def summary_comparison(request: HttpRequest) -> HttpResponse:
@@ -849,7 +962,7 @@ def summary_comparison(request: HttpRequest) -> HttpResponse:
         all_years = sorted(simulation_years.union(real_data_years))
 
         if not all_years:
-            messages.warning(request, "Aucune donnée disponible pour la comparaison")
+            messages.error(request, "Aucune donnée disponible pour la comparaison")
             return render(request, 'summary_comparison.html', {
                 'summary_data': [],
                 'years': [],
@@ -1037,11 +1150,11 @@ def manage_inflation_rates(request: HttpRequest) -> HttpResponse:
                         'commentaire': form.cleaned_data['commentaire']
                     }
                 )
-                messages.Warning(request, "Taux d'inflation mis à jour avec succès")
+                messages.success(request, "Taux d'inflation mis à jour avec succès")
                 return redirect('manage_inflation_rates')
             except Exception as e:
                 logger.error(f"Error saving inflation rate: {str(e)}")
-                messages.Warning(request, "Erreur lors de la sauvegarde du taux d'inflation")
+                messages.error(request, "Erreur lors de la sauvegarde du taux d'inflation")
     else:
         form = AnnualInflationRateForm()
 
@@ -1085,6 +1198,43 @@ def delete_inflation_rate(request: HttpRequest, year: int) -> HttpResponse:
 
 
 @login_required
+@require_http_methods(["POST"])
+def recalculate_real_data(request: HttpRequest, simulation_id: int) -> HttpResponse:
+    """Recalculate real data with current inflation rates."""
+    try:
+        simulation = get_object_or_404(Simulation, id=simulation_id, user=request.user)
+
+        with transaction.atomic():
+            # Get all real data entries for this simulation
+            real_data_entries = RealAccountData.objects.filter(simulation=simulation)
+
+            # Update each entry with current inflation rates
+            for entry in real_data_entries:
+                # Get current inflation rate for the year
+                inflation_rate = AnnualInflationRate.objects.filter(
+                    annee=entry.annee
+                ).first()
+
+                # Update with new inflation rate or default to 0
+                new_taux_inflation = inflation_rate.taux_inflation if inflation_rate else Decimal('0')
+
+                # Update the entry
+                entry.taux_inflation = new_taux_inflation
+                entry.montant_reel_ajuste = entry.montant_reel / (1 + new_taux_inflation / 100)
+                entry.save()
+
+        messages.success(request, "Calculs mis à jour avec succès")
+        return JsonResponse({"status": "success"})
+
+    except Exception as e:
+        logger.error(f"Error recalculating real data: {str(e)}")
+        return JsonResponse({
+            "status": "error",
+            "message": "Une erreur est survenue lors de la mise à jour"
+        }, status=500)
+
+
+@login_required
 def portfolio_list(request: HttpRequest) -> HttpResponse:
     """View to display user's portfolios."""
     portfolios = Portfolio.objects.filter(user=request.user)
@@ -1095,7 +1245,7 @@ def portfolio_list(request: HttpRequest) -> HttpResponse:
             portfolio = form.save(commit=False)
             portfolio.user = request.user
             portfolio.save()
-            messages.Warning(request, "Portfolio créé avec succès")
+            messages.success(request, "Portfolio créé avec succès")
             return redirect('portfolio_detail', portfolio_id=portfolio.id)
     else:
         form = PortfolioForm()
@@ -1194,14 +1344,14 @@ def add_transaction(request: HttpRequest, portfolio_id: int) -> HttpResponse:
                     else:
                         position.delete()
 
-                    messages.Warning(request, "Transaction enregistrée avec succès")
+                    messages.success(request, "Transaction enregistrée avec succès")
                     return redirect('portfolio_detail', portfolio_id=portfolio_id)
 
             except ValidationError as e:
                 messages.error(request, str(e))
             except Exception as e:
                 logger.error(f"Error processing transaction: {str(e)}", exc_info=True)
-                messages.Warning(request, "Une erreur est survenue lors du traitement de la transaction")
+                messages.error(request, "Une erreur est survenue lors du traitement de la transaction")
     else:
         form = TransactionForm()
 
@@ -1220,7 +1370,7 @@ def stock_list(request: HttpRequest) -> HttpResponse:
         form = StockForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.Warning(request, "Titre ajouté avec succès")
+            messages.success(request, "Titre ajouté avec succès")
             return redirect('stock_list')
     else:
         form = StockForm()
@@ -1242,7 +1392,7 @@ def delete_portfolio(request: HttpRequest, portfolio_id: int) -> HttpResponse:
             # This will automatically delete all related positions and transactions due to CASCADE
             portfolio.delete()
 
-        messages.Warning(request, "Portfolio supprimé avec succès")
+        messages.success(request, "Portfolio supprimé avec succès")
         return JsonResponse({"status": "success"})
 
     except Exception as e:
@@ -1268,7 +1418,7 @@ def delete_stock(request: HttpRequest, stock_id: int) -> HttpResponse:
             }, status=400)
 
         stock.delete()
-        messages.Warning(request, "Titre supprimé avec succès")
+        messages.success(request, "Titre supprimé avec succès")
         return JsonResponse({"status": "success"})
 
     except Exception as e:
@@ -1331,7 +1481,7 @@ def delete_transaction(request: HttpRequest, transaction_id: int) -> HttpRespons
             # Delete the transaction
             transaction_obj.delete()
 
-        messages.Warning(request, "Transaction supprimée avec succès")
+        messages.success(request, "Transaction supprimée avec succès")
         return JsonResponse({"status": "success"})
 
     except ValidationError as e:

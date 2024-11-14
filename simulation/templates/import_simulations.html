@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Importer des simulations</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            {{ form.csv_file.label_tag }}
+                            {{ form.csv_file }}
+                            {% if form.csv_file.help_text %}
+                                <div class="form-text">{{ form.csv_file.help_text }}</div>
+                            {% endif %}
+                            {% if form.csv_file.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.csv_file.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h5>Format du fichier CSV attendu:</h5>
+                            <ul class="mb-0">
+                                <li>Séparateur: point-virgule (;)</li>
+                                <li>Encodage: UTF-8</li>
+                                <li>Colonnes requises:
+                                    <ul>
+                                        <li>categorie: Courant, Ep.Financière, Assurance Vie, ou Epargne Entreprise</li>
+                                        <li>nom_compte: Nom du compte</li>
+                                        <li>montant_initial: Montant initial (utilisez un point pour les décimales)</li>
+                                        <li>currency: € (seuls les euros sont supportés)</li>
+                                        <li>taux_rentabilite: Taux en pourcentage (ex: 5 pour 5%)</li>
+                                        <li>periode: Nombre d'années</li>
+                                        <li>annee_depart: Année de départ</li>
+                                        <li>montant_fixe_annuel: Montant ajouté chaque année</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="text-end">
+                            <a href="{% url 'simulation' %}" class="btn btn-secondary me-2">Annuler</a>
+                            <button type="submit" class="btn btn-primary">Importer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

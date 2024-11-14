@@ -24,21 +24,62 @@
     </div>
 
     {% if selected_account %}
-        <!-- Toggle Inflation -->
-        <div class="row mb-3">
-            <div class="col">
-                <div class="btn-group" role="group">
-                    <a href="?account={{ selected_account.id }}&inflation=false"
-                       class="btn btn-outline-primary {% if not show_inflation %}active{% endif %}">
-                        Sans inflation
-                    </a>
-                    <a href="?account={{ selected_account.id }}&inflation=true"
-                       class="btn btn-outline-primary {% if show_inflation %}active{% endif %}">
-                        Avec inflation
-                    </a>
-                </div>
+<div class="row mb-4">
+    <div class="col">
+        <div class="d-flex gap-3 flex-wrap">
+            <!-- Inflation Toggle -->
+            <div class="btn-group" role="group" aria-label="Options d'affichage">
+                <a href="?account={{ selected_account.id }}&inflation=false"
+                   class="btn btn-outline-primary {% if not show_inflation %}active{% endif %}">
+                    <i class="bi bi-graph-up"></i>
+                    Sans inflation
+                </a>
+                <a href="?account={{ selected_account.id }}&inflation=true"
+                   class="btn btn-outline-primary {% if show_inflation %}active{% endif %}">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    Avec inflation
+                </a>
             </div>
+
+           <div class="btn-group">
+    <a href="{% url 'export_real_data' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-download me-2"></i>
+        Exporter
+    </a>
+
+    <form method="post"
+          action="{% url 'import_real_data' %}"
+          enctype="multipart/form-data"
+          style="display: contents;">
+        {% csrf_token %}
+        <input type="file"
+               name="csv_file"
+               class="d-none"
+               id="realDataFile"
+               accept=".csv">
+        <button type="button"
+                class="btn btn-outline-secondary"
+                onclick="document.getElementById('realDataFile').click()">
+            <i class="bi bi-upload me-2"></i>
+            Importer
+        </button>
+    </form>
+</div>
+
+            <!-- Recalculate Button -->
+            {% if real_data %}
+            <div class="btn-group">
+                <button id="recalculateBtn"
+                        class="btn btn-outline-primary"
+                        data-simulation-id="{{ selected_account.id }}">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    Recalculer l'inflation
+                </button>
+            </div>
+            {% endif %}
         </div>
+    </div>
+</div>
 
         <!-- Graphique -->
         <div class="row mb-4">
@@ -100,10 +141,11 @@
                     {% endwith %}
                 </td>
                 <td>
-                    <button class="btn btn-sm btn-danger"
-                            onclick="deleteRealData({{ data.id }})">
-                        Supprimer
-                    </button>
+                    <button
+    class="btn btn-sm btn-danger delete-real-data"
+    data-id="{{ data.id }}">
+    Supprimer
+</button>
                 </td>
             </tr>
             {% endfor %}
@@ -117,22 +159,77 @@
     {% endif %}
 </div>
 
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% block extrajs %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('comparisonChart').getContext('2d');
-    const chartData = {{ chart_data|safe }};
+// S'assurer que le code ne s'exécute qu'une seule fois
+(function() {
+   // Fonction de suppression des données réelles
+function handleDelete(button) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ces données ?')) {
+        return;
+    }
 
-    new Chart(ctx, {
+    const dataId = button.dataset.id;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    fetch(`/simulation/compare-real-data/delete/${dataId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erreur réseau');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            // Recharger silencieusement sans afficher de message d'erreur
+            window.location.reload();
+        } else {
+            alert('Erreur lors de la suppression : ' + (data.message || 'Erreur inconnue'));
+        }
+    })
+    .catch(error => {
+        if (error.message !== 'Erreur réseau') {
+            console.error('Erreur:', error);
+            alert('Une erreur est survenue lors de la suppression');
+        }
+    });
+}
+
+    // Vérifier si le graphique existe déjà
+    const chartCanvas = document.getElementById('comparisonChart');
+    if (!chartCanvas) {
+        return;
+    }
+
+    // Nettoyer tout graphique existant
+    const existingChart = Chart.getChart(chartCanvas);
+    if (existingChart) {
+        existingChart.destroy();
+    }
+
+    // Créer le nouveau graphique
+    {% if chart_data %}
+    const ctx = chartCanvas.getContext('2d');
+    const chart = new Chart(ctx, {
         type: 'line',
-        data: chartData,
+        data: {{ chart_data|safe }},
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
+                legend: {
+                    position: 'top',
+                },
                 title: {
                     display: true,
-                    text: 'Comparaison simulation vs réel'
+                    text: 'Comparaison Simulation vs Réel'
                 }
             },
             scales: {
@@ -147,26 +244,73 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+    {% endif %}
 
-    // Function to delete real data
-    window.deleteRealData = function(dataId) {
-        if (confirm('Êtes-vous sûr de vouloir supprimer ces données ?')) {
-            fetch(`/simulation/compare-real-data/delete/${dataId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    window.location.reload();
-                } else {
-                    alert('Erreur lors de la suppression');
-                }
-            });
-        }
-    };
+    // Gestion de la suppression des données réelles
+    document.querySelectorAll('.delete-real-data').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleDelete(this);
+        });
+    });
+
+   // Gestion de la mise à jour des calculs d'inflation
+const recalculateBtn = document.getElementById('recalculateBtn');
+if (recalculateBtn) {
+    recalculateBtn.addEventListener('click', function() {
+        const simulationId = this.dataset.simulationId;
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        // Désactiver le bouton pendant le traitement
+        this.disabled = true;
+        this.innerHTML = 'Mise à jour en cours...';
+
+        fetch(`/simulation/recalculate-real-data/${simulationId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                // Recharger silencieusement sans afficher de message d'erreur
+                window.location.reload();
+            } else {
+                this.disabled = false;
+                this.innerHTML = 'Mettre à jour les calculs d\'inflation';
+                alert('Erreur lors de la mise à jour : ' + (data.message || 'Erreur inconnue'));
+            }
+        })
+        .catch(error => {
+            if (error.message !== 'Erreur réseau') {
+                console.error('Erreur:', error);
+                alert('Une erreur est survenue lors de la mise à jour');
+            }
+            this.disabled = false;
+            this.innerHTML = 'Mettre à jour les calculs d\'inflation';
+        });
+    });
+}
+
+    // Gestion du changement de compte sélectionné
+    const accountSelect = document.getElementById('accountSelect');
+    if (accountSelect) {
+        accountSelect.addEventListener('change', function() {
+            const searchParams = new URLSearchParams(window.location.search);
+            searchParams.set('account', this.value);
+            window.location.href = `${window.location.pathname}?${searchParams.toString()}`;
+        });
+    }
+})();
+    document.getElementById('realDataFile').addEventListener('change', function() {
+    this.form.submit();
 });
 </script>
 {% endblock %}
