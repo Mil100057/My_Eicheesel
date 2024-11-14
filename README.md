@@ -83,7 +83,7 @@ python manage.py collectstatic --no-input
 
 
 ### Please signup first as admin
-- Username: `<your_superuser_name>`
+- Username: `<your_super_user_name>`
 - Password: `<your_password>`
 
 
