@@ -31,8 +31,8 @@ ALLOWED_HOSTS = str(os.getenv("ALLOWED_HOSTS")).split(",")
 #SESSION_COOKIE_SECURE = True
 #CSRF_COOKIE_SECURE = True
 CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1',
-                        'http://localhost:8080', 'http://127.0.0.1:8080',
-                        'http://192.168.1.64:8080']
+                        'http://localhost:8080', 'http://127.0.0.1:8080'
+                        ]
 
 # Application definition
 
