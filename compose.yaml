@@ -1,6 +1,6 @@
 services:
   server:
-    image: milmil57/eicheesel
+    image: eicheesel
     volumes:
       - static_files:/app/staticfiles
     expose:
