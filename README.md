@@ -43,8 +43,8 @@ gh repo clone Mil100057/My_Eicheesel
 #or
 git clone https://github.com/Mil100057/My_Eicheesel.git
 cd My_Eicheesel
-docker buildx build --platform=linux/amd64 -t eicheesel #(example for linux AMD version)
-docker buildx build --platform=linux/arm64 -t eicheesel #(example for linux ARM version)
+docker buildx build --platform=linux/amd64 -t eicheesel .    #(example for linux AMD version)
+docker buildx build --platform=linux/arm64 -t eicheesel .    #(example for linux ARM version)
 ```
 
 2. Prepare the environment:
