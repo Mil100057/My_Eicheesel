@@ -32,7 +32,7 @@ A savings and long-term investment simulation application by Mil100057
 - Docker
 - Docker Daemon running
 - Buildx for choosing your version
-- In settings.py add: An ALPHAVANTAGE API KEY
+- In settings.py add an ALPHAVANTAGE API KEY
    you can get one here https://www.alphavantage.co
 
 ### Installation
