@@ -69,7 +69,7 @@ docker compose up --detach
 ```
 
 Once containers are running
-Enter in the terminal of your server container
+enter in the terminal of your eicheesel-server-1 container
 
 ```bash
 python manage.py migrate 
@@ -83,10 +83,11 @@ python manage.py collectstatic --no-input
 - URL: `http://localhost:8080`
 
 
-### Please signup first as admin
+### Please Signup
+or
+### Login as admin
 - Username: `<your_super_user_name>`
 - Password: `<your_password>`
-
 
 ## Administration
 
