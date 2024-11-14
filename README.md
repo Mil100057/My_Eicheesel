@@ -40,8 +40,11 @@ A savings and long-term investment simulation application by Mil100057
 1. Clone the repository and Build the Docker container:
 ```bash
 gh repo clone Mil100057/My_Eicheesel
-cd Eicheesel
-docker buildx build --platform=linux/amd64 -t eicheesel (example for linux/amd64 version)
+#or
+git clone https://github.com/Mil100057/My_Eicheesel.git
+cd My_Eicheesel
+docker buildx build --platform=linux/amd64 -t eicheesel .    #(example for linux AMD version)
+docker buildx build --platform=linux/arm64 -t eicheesel .    #(example for linux ARM version)
 ```
 
 2. Prepare the environment:
