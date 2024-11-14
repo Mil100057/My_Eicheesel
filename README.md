@@ -116,7 +116,7 @@ in settings.py modify
 ```bash
 CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1',
                         'http://localhost:8080', 'http://127.0.0.1:8080',
-                        'h<your_host_adress_if_needed>']
+                        '<your_host_adress_if_needed>']
 ```
 
 ## Support
