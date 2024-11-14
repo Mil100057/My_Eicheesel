@@ -63,9 +63,9 @@ DB_PORT=5432
 ```
 exit and save nano by CTRL+X and Y
 
-3. Start the application:
+3. Start the application in detach mode:
 ```bash
-docker compose up
+docker compose up --detach
 ```
 
 Once containers are running
