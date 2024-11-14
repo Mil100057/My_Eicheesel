@@ -61,7 +61,7 @@ DB_PASSWORD=eicheesel
 DB_HOST=db
 DB_PORT=5432
 ```
-exit and save nano by CTRL+X and Y
+exit nano and save .env by CTRL+X and Y
 
 3. Start the application in detach mode:
 ```bash
