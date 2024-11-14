@@ -53,7 +53,7 @@ enter you ENV VARIABLES
 DEBUG=0
 SECRET_KEY=<YOUR_SECURE_KEY>
 API_KEY=<YOUR_AV_API_KEY>
-ALLOWED_HOSTS=localhost,127.0.0.1,<your_host_adress_if_needed>
+ALLOWED_HOSTS=localhost,127.0.0.1,<your_host_adress_if_needed> Please look below also
 DB_NAME=eicheesel_db
 DB_USERNAME=eicheesel
 DB_PASSWORD=eicheesel
@@ -108,6 +108,14 @@ To modify category types:
 1. Navigate to the `simulation` folder
 2. Edit `models.py`
 3. Modify the `Category` class as needed
+
+### Customizing your webhost
+in settings.py modify
+```bash
+CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1',
+                        'http://localhost:8080', 'http://127.0.0.1:8080',
+                        'h<your_host_adress_if_needed>']
+```
 
 ## Support
 
