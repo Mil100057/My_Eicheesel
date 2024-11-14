@@ -1,6 +1,7 @@
 HELP WANTED
 If you want to contribute please contact me.
-Application still in debug mode
+
+⚠️ ⚠️ ⚠️ Application still in debug mode
 
 ![img.png](img.png)
 
