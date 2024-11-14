@@ -47,8 +47,9 @@ docker buildx build --platform=linux/amd64 -t eicheesel (example for linux/amd64
 ```bash
 nano .env
 ```
+
 enter you ENV VARIABLES
-'
+```bash
 DEBUG=0
 SECRET_KEY=<YOUR_SECURE_KEY>
 API_KEY=<YOUR_AV_API_KEY>
@@ -58,7 +59,7 @@ DB_USERNAME=eicheesel
 DB_PASSWORD=eicheesel
 DB_HOST=db
 DB_PORT=5432
-'
+```
 exit and save nano by CTRL+X and Y
 
 3. Start the application:
