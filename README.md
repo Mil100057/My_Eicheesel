@@ -23,43 +23,70 @@ A savings and long-term investment simulation application by Mil100057
 - No guarantees are provided regarding calculation results
 - You are responsible for your data security
 - The application only performs basic calculations and storage
-- No financial advice is provided
+- No financial advice are provided
 
 ## Quick Start
 
 ### Prerequisites
 - Docker
 - Docker Daemon running
+- Buildx for choosing your version
 - In settings.py add:
-SECRET_KEY = '*your django key here*'
-ALPHA_VANTAGE_API_KEY = '*your API key here*'
-ALLOWED_HOST [*your host if not local*]
+An ALPHAVANTAGE API KEY you can get here https://www.alphavantage.co
 
 ### Installation
 
-1. Build the Docker container:
+1. Clone the repository and Build the Docker container:
 ```bash
-docker compose build
+gh repo clone Mil100057/My_Eicheesel
+cd Eicheesel
+docker buildx build --platform=linux/amd64 -t eicheesel
 ```
 
 2. Start the application:
 ```bash
+nano .env
+```
+enter you ENV VARIABLES
+
+DEBUG=0
+SECRET_KEY=<YOUR_SECURE_KEY>
+API_KEY=<YOUR_AV_API_KEY>
+ALLOWED_HOSTS=localhost,127.0.0.1,<your_host_adress_if_needed>
+DB_NAME=eicheesel_db
+DB_USERNAME=eicheesel
+DB_PASSWORD=eicheesel
+DB_HOST=db
+DB_PORT=5432
+
+exit and save nano by CTRL+X and Y
+
+3. Start the application:
+```bash
 docker compose up
 ```
 
+Once containers are running
+Enter in the terminal of your server container
+
+```bash
+python manage.py migrate 
+python manage.py createsuperuser
+python manage.py collectstatic --no-input
+```
+⚠️ **Important**: superuser credentials are mandatory, choose a strong password!
+
 ### Accessing the Application
 
-- URL: `http://localhost:8000`
-- 
-⚠️⚠️⚠️⚠️NOTE : in this version , No super User created, you have to create a normal user⚠️⚠️⚠️⚠️⚠️
+- URL: `http://localhost:8080`
+
 
 ### Please signup first as admin
-- Username: `admin`
+- Username: `<your_superuser_name>`
 - Password: `your_password`
 
-⚠️ **Important**: Change these credentials on first login!
 
-⚠️⚠️⚠️⚠️NOTE : in this version , No super User created, you have to create a normal user⚠️⚠️⚠️⚠️⚠️
+
 
 ## Administration
 
