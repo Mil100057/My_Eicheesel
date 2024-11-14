@@ -49,15 +49,15 @@ nano .env
 ```
 enter you ENV VARIABLES
 
-DEBUG=0
-SECRET_KEY=<YOUR_SECURE_KEY>
-API_KEY=<YOUR_AV_API_KEY>
-ALLOWED_HOSTS=localhost,127.0.0.1,<your_host_adress_if_needed>
-DB_NAME=eicheesel_db
-DB_USERNAME=eicheesel
-DB_PASSWORD=eicheesel
-DB_HOST=db
-DB_PORT=5432
+# DEBUG=0
+# SECRET_KEY=<YOUR_SECURE_KEY>
+# API_KEY=<YOUR_AV_API_KEY>
+# ALLOWED_HOSTS=localhost,127.0.0.1,<your_host_adress_if_needed>
+# DB_NAME=eicheesel_db
+# DB_USERNAME=eicheesel
+# DB_PASSWORD=eicheesel
+# DB_HOST=db
+# DB_PORT=5432
 
 exit and save nano by CTRL+X and Y
 
