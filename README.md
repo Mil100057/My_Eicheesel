@@ -31,8 +31,8 @@ A savings and long-term investment simulation application by Mil100057
 - Docker
 - Docker Daemon running
 - Buildx for choosing your version
-- In settings.py add:
-An ALPHAVANTAGE API KEY you can get here https://www.alphavantage.co
+- In settings.py add: An ALPHAVANTAGE API KEY
+   you can get one here https://www.alphavantage.co
 
 ### Installation
 
@@ -40,10 +40,10 @@ An ALPHAVANTAGE API KEY you can get here https://www.alphavantage.co
 ```bash
 gh repo clone Mil100057/My_Eicheesel
 cd Eicheesel
-docker buildx build --platform=linux/amd64 -t eicheesel
+docker buildx build --platform=linux/amd64 -t eicheesel (example for linux/amd64 version)
 ```
 
-2. Start the application:
+2. Prepare the environment:
 ```bash
 nano .env
 ```
@@ -83,24 +83,18 @@ python manage.py collectstatic --no-input
 
 ### Please signup first as admin
 - Username: `<your_superuser_name>`
-- Password: `your_password`
-
-
+- Password: `<your_password>`
 
 
 ## Administration
 
-- Admin panel available at: `http://localhost:8000/admin/`
+- Admin panel available at: `http://localhost:8080/admin/`
 - Use this interface to manage credentials and access the database
 
 ## Usage Guide
 
 ### Initial Setup
-1. **Clear Example Data** (Optional)
-   - Navigate to "Vue par nom" in the sidebar
-   - Delete existing simulation data if desired
-
-2. **Configure Categories**
+1. **Configure Categories**
    - Go to Settings → Catégorie(s) in the sidebar
    - Select or create categories for your simulations
 
