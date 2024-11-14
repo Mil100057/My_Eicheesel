@@ -1,0 +1,293 @@
+{% load static %}
+
+<html lang="fr" data-bs-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="MIL">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Eicheesel by MIL</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link href="{% static 'css/bootstrap.css' %}" rel="stylesheet">
+    <link href="{% static 'css/main.css' %}" rel="stylesheet">
+    <link href="{% static 'css/dashboard.css' %}" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+  </head>
+
+  <body>
+    <header class="navbar sticky-top bg-dark flex-md-nowrap p-0 shadow" data-bs-theme="dark">
+      <img src="{% static 'images/Eicheesel_logo.png' %}">
+      <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6 text-white" href="#">EICHEESEL by MIL</a>
+    </header>
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="sidebar border border-right col-md-3 col-lg-2 p-0 bg-body-tertiary">
+          <div class="offcanvas-md offcanvas-end bg-body-tertiary" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
+            <div class="offcanvas-header">
+              <h5 class="offcanvas-title" id="sidebarMenuLabel">MIL by MIL</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3 overflow-y-auto">
+              <ul class="nav flex-column">
+                <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2 active" aria-current="page" href="{% url 'base' %}">
+                    <svg class="bi"><use xlink:href="#house-fill"/></svg>
+                    Home
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2" href="{% url 'view_name' %}">
+                    <svg class="bi"><use xlink:href="#cart"/></svg>
+                    Compte(s)
+                  </a>
+                </li>
+              </ul>
+
+              <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase">
+                <span>Simulations</span>
+                <a class="link-secondary" href="#" aria-label="Add a new report">
+                  <svg class="bi"><use xlink:href="#plus-circle"/></svg>
+                </a>
+              </h6>
+              <ul class="nav flex-column mb-auto">
+              <li class="nav-item">
+                  <a href="{% url 'summary_comparison' %}" class="nav-link d-flex align-items-center gap-2">
+                    <i class="bi bi-table"></i>
+                  Vue d'ensemble
+                  </a>
+                </li>
+              </ul>
+              <ul class="nav flex-column mb-auto">
+                <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2" href="{% url 'results_list_by_name' %}">
+                    <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
+                    Vue par nom
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2" href="{% url 'results_list_by_cat' %}">
+                    <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
+                    Vue par catégorie
+                  </a>
+                </li>
+              </ul>
+               <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase">
+                <span>Suivi</span>
+                <a class="link-secondary" href="#" aria-label="Add a new report">
+                  <svg class="bi"><use xlink:href="#plus-circle"/></svg>
+                </a>
+              </h6>
+              <ul class="nav flex-column mb-auto">
+              <li class="nav-item">
+                  <a href="{% url 'compare_real_data' %}" class="nav-link d-flex align-items-center gap-2">
+                  <i class="bi bi-graph-up"></i>
+                  Données Réelles
+                  </a>
+                </li>
+              </ul>
+              <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase">
+                <span>Bourse</span>
+                <a class="link-secondary" href="#" aria-label="Add a new report">
+                  <svg class="bi"><use xlink:href="#plus-circle"/></svg>
+                </a>
+              </h6>
+              <ul class="nav flex-column mb-auto">
+              <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2" href="{% url 'portfolio_list' %}">
+                    <svg class="bi"><use xlink:href="#cart"/></svg>
+                    Portfolio
+                  </a>
+                </li>
+              </ul>
+              <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase">
+                <span>Settings</span>
+                <a class="link-secondary" href="#" aria-label="Add a new report">
+                  <svg class="bi"><use xlink:href="#plus-circle"/></svg>
+                </a>
+              </h6>
+              <ul class="nav flex-column mb-auto">
+              <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2" href="{% url 'simulation' %}">
+                    <svg class="bi"><use xlink:href="#cart"/></svg>
+                    Simulation(s)
+                  </a>
+                </li>
+              </ul>
+              <ul class="nav flex-column mb-auto">
+              <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2" href="{% url 'view_category' %}">
+                    <svg class="bi"><use xlink:href="#cart"/></svg>
+                    Catégorie(s)
+                  </a>
+                </li>
+              </ul>
+              <ul class="nav flex-column mb-auto">
+              <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2" href="{% url 'manage_inflation_rates' %}">
+                    <svg class="bi"><use xlink:href="#cart"/></svg>
+                    Inflation
+                  </a>
+                </li>
+              </ul>
+              <ul class="nav flex-column mb-auto">
+              <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2" href="{% url 'stock_list' %}">
+                    <svg class="bi"><use xlink:href="#cart"/></svg>
+                    Titres(s)
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h4 class="h5">
+              {% if user.is_authenticated %}
+                {{ user.username}}, you are in
+              {% else %}
+                Please login or signup
+              {% endif %}
+            </h4>
+            <div class="btn-toolbar mb-2 mb-md-0">
+              <div class="btn-group me-2">
+                {% if not user.is_authenticated %}
+                  <button type="button" onclick="window.location.href = '{% url 'signup' %}';" class="btn btn-sm btn-outline-secondary">Signup</button>
+                  <button type="button" onclick="window.location.href = '{% url 'login' %}';" class="btn btn-sm btn-outline-secondary">Login</button>
+                {% endif %}
+                {% if user.is_authenticated %}
+                  <button type="button" onclick="window.location.href = '{% url 'logout' %}';" class="btn btn-sm btn-outline-secondary">Logout</button>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          {% csrf_token %}
+          {% block content %}{% csrf_token %}{% endblock %}
+        </main>
+      </div>
+    </div>
+ <!-- Add Chart.js before any other scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+
+    <!-- JavaScript Bundle -->
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js/popper.min.js' %}"></script>
+    <script src="{% static 'js/jquery-3.7.0.min.js' %}"></script>
+ <!-- Add the initialization function -->
+    <script>
+    function initializeChart(chartLabels, chartData) {
+    const ctx = document.getElementById('simulationChart').getContext('2d');
+
+    // Generate smooth pastel colors
+    function generateColors(count) {
+        const colors = [];
+        for (let i = 0; i < count; i++) {
+            const hue = (i * 137.508) % 360;  // Golden angle approximation
+            colors.push(`hsla(${hue}, 65%, 75%, 0.85)`);  // Lighter, softer colors
+        }
+        return colors;
+    }
+
+    // Parse the data if it's a string
+    const labels = typeof chartLabels === 'string' ? JSON.parse(chartLabels) : chartLabels;
+    const datasets = typeof chartData === 'string' ? JSON.parse(chartData) : chartData;
+
+    // Generate colors for datasets
+    const colors = generateColors(datasets.length);
+
+    // Apply colors and stacking to datasets
+    datasets.forEach((dataset, index) => {
+        dataset.backgroundColor = colors[index];
+        dataset.borderColor = colors[index].replace('0.85', '1');
+        dataset.borderWidth = 1;
+        dataset.stack = 'stack1';  // All datasets in same stack
+    });
+
+    // Destroy existing chart if it exists
+    if (window.myChart instanceof Chart) {
+        window.myChart.destroy();
+    }
+
+    // Create new chart
+    window.myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Évolution cumulée du capital dans le temps',
+                    padding: 20
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('fr-FR', {
+                                    style: 'currency',
+                                    currency: 'EUR',
+                                    maximumFractionDigits: 0
+                                }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Année',
+                        padding: 10
+                    },
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    display: true,
+                    stacked: true,  // Enable stacking
+                    title: {
+                        display: true,
+                        text: 'Montant (€)',
+                        padding: 10
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return new Intl.NumberFormat('fr-FR', {
+                                style: 'currency',
+                                currency: 'EUR',
+                                maximumFractionDigits: 0
+                            }).format(value);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+    </script>
+    <!-- Block pour le JavaScript supplémentaire -->
+    {% block extrajs %}{% endblock %}
+  </body>
+</html>

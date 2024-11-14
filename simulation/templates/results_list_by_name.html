@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="container-fluid py-4">
+    <!-- Search Form -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <form method="get" class="d-flex">
+                <div class="form-group flex-grow-1">
+                    <select name="account_name" class="form-select">
+                        <option value="">Sélectionner un compte</option>
+                        <option value="all" {% if selected_name == 'all' %}selected{% endif %}>Tous les comptes</option>
+                        {% for name in account_names %}
+                            <option value="{{ name }}" {% if selected_name == name %}selected{% endif %}>
+                                {{ name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary ms-2">Rechercher</button>
+            </form>
+        </div>
+    </div>
+
+    {% if selected_name %}
+        <!-- Chart Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    {% if selected_name == 'all' %}
+                        Résultats de simulation pour tous les comptes
+                    {% else %}
+                        Résultats de simulation pour {{ selected_name }}
+                    {% endif %}
+                </h5>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-primary">
+                        {% if cumulative %}
+                            Vue détaillée
+                        {% else %}
+                            Vue totale
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 400px; width: 100%;">
+                    <canvas id="simulationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Table Card -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Détails des résultats</h5>
+                <div class="btn-group">
+                    <a href="{% url 'export_results_by_name' %}?account_name={{ selected_name }}"
+                   class="btn btn-outline-secondary">
+                    <i class="bi bi-download"></i> Export CSV
+                   </a>
+            </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Année</th>
+                                <th>Nom du compte</th>
+                                <th>Catégorie</th>
+                                <th>Montant théorique</th>
+                                <th>Devise</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in consolidated_results %}
+                            <tr>
+                                <td>{{ result.annee }}</td>
+                                <td>{{ result.simulation.nom_compte }}</td>
+                                <td>{{ result.simulation.categorie.category }}</td>
+                                <td>{{ result.montant|floatformat:0 }}</td>
+                                <td>€</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            Veuillez sélectionner un compte pour voir les résultats
+        </div>
+    {% endif %}
+
+
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        if ({{ chart_data|safe }} && {{ chart_labels|safe }}) {
+            console.log('Initializing chart...');
+            try {
+                initializeChart({{ chart_labels|safe }}, {{ chart_data|safe }});
+                console.log('Chart initialized successfully');
+            } catch (error) {
+                console.error('Error initializing chart:', error);
+            }
+        } else {
+            console.log('No chart data available');
+        }
+
+        // Handle account selection change
+        const accountSelect = document.querySelector('select[name="account_name"]');
+        if (accountSelect) {
+            accountSelect.addEventListener('change', function() {
+                if (this.value) {
+                    this.form.submit();
+                }
+            });
+        }
+
+        // Handle view toggle button
+        const toggleButton = document.querySelector('.btn-group .btn-outline-primary');
+        if (toggleButton) {
+            toggleButton.addEventListener('click', function() {
+                const currentUrl = new URL(window.location.href);
+                const cumulative = currentUrl.searchParams.get('cumulative') === 'true';
+                currentUrl.searchParams.set('cumulative', (!cumulative).toString());
+                window.location.href = currentUrl.toString();
+            });
+        }
+
+        // Handle CSV export
+        const exportButton = document.querySelector('.btn-outline-secondary');
+        if (exportButton) {
+            exportButton.addEventListener('click', function() {
+                // Add CSV export functionality here if needed
+                alert('Export CSV functionality to be implemented');
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Comparaison avec données réelles</h2>
+
+    <!-- Sélection du compte -->
+    <div class="row mb-4">
+        <div class="col">
+            <form method="get" class="form-inline">
+                <div class="input-group">
+                    <select name="account" class="form-select" onchange="this.form.submit()">
+                        <option value="">Sélectionnez un compte</option>
+                        {% for account in accounts %}
+                            <option value="{{ account.id }}" {% if selected_account.id == account.id %}selected{% endif %}>
+                                {{ account.nom_compte }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if selected_account %}
+        <!-- Toggle Inflation -->
+        <div class="row mb-3">
+            <div class="col">
+                <div class="btn-group" role="group">
+                    <a href="?account={{ selected_account.id }}&inflation=false"
+                       class="btn btn-outline-primary {% if not show_inflation %}active{% endif %}">
+                        Sans inflation
+                    </a>
+                    <a href="?account={{ selected_account.id }}&inflation=true"
+                       class="btn btn-outline-primary {% if show_inflation %}active{% endif %}">
+                        Avec inflation
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphique -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="card">
+                    <div class="card-body">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulaire d'ajout de données réelles -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        Ajouter des données réelles
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ real_data_form.as_p }}
+                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tableau des données -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        Données enregistrées
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Année</th>
+                <th>Montant réel</th>
+                <th>Inflation (%)</th>
+                <th>Montant ajusté</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in real_data %}
+            <tr>
+                <td>{{ data.annee }}</td>
+                <td>{{ data.montant_reel|floatformat:2 }} €</td>
+                <td>{{ data.taux_inflation|floatformat:2 }}%</td>
+                <td>
+                    {% with adjusted=data.montant_reel|default:0 %}
+                        {% with inflation_factor=data.taux_inflation|default:0 %}
+                            {{ data.montant_reel_ajuste|floatformat:2 }} €
+                        {% endwith %}
+                    {% endwith %}
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-danger"
+                            onclick="deleteRealData({{ data.id }})">
+                        Supprimer
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('comparisonChart').getContext('2d');
+    const chartData = {{ chart_data|safe }};
+
+    new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Comparaison simulation vs réel'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' €';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Function to delete real data
+    window.deleteRealData = function(dataId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer ces données ?')) {
+            fetch(`/simulation/compare-real-data/delete/${dataId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload();
+                } else {
+                    alert('Erreur lors de la suppression');
+                }
+            });
+        }
+    };
+});
+</script>
+{% endblock %}
+{% endblock %}

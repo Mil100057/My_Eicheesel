@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>Liste des Titres</h2>
+            
+            {% if stocks %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Symbole</th>
+                            <th>Nom</th>
+                            <th>Type</th>
+                            <th>Secteur</th>
+                            <th>Devise</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stock in stocks %}
+                        <tr>
+                            <td>{{ stock.symbol }}</td>
+                            <td>{{ stock.name }}</td>
+                            <td>
+                                <span class="badge {% if stock.asset_type == 'STOCK' %}bg-primary{% else %}bg-success{% endif %}">
+                                    {{ stock.get_asset_type_display }}
+                                </span>
+                            </td>
+                            <td>{{ stock.sector }}</td>
+                            <td>{{ stock.currency }}</td>
+                            <td>
+                            <button class="btn btn-sm btn-danger" onclick="deleteStock({{ stock.id }})">
+                                Supprimer
+                            </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                Aucun titre n'a été ajouté pour le moment.
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Ajouter un Titre</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-success w-100">
+                            Ajouter
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+function deleteStock(stockId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce titre ?')) {
+        fetch(`/simulation/stocks/stock/${stockId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert(data.message || 'Une erreur est survenue');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue');
+        });
+    }
+}
+</script>
+{% endblock %}

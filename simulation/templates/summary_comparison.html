@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load comparison_filters %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Toggle Inflation -->
+    <div class="row mb-3">
+        <div class="col">
+            <div class="btn-group" role="group">
+                <a href="?inflation=false"
+                   class="btn btn-outline-primary {% if not show_inflation %}active{% endif %}">
+                    Sans inflation
+                </a>
+                <a href="?inflation=true"
+                   class="btn btn-outline-primary {% if show_inflation %}active{% endif %}">
+                    Avec inflation
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Card -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Comparaison par compte - Toutes les années</h5>
+        </div>
+        <div class="card-body">
+            <div style="position: relative; height: 400px; width: 100%;">
+                <canvas id="summaryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Year Cards Row -->
+    <div class="row md-2">
+        {% for year in years %}
+        {% with year_data=yearly_totals|get:year %}
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ year }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <small>Simulé</small>
+                            <h6>{{ year_data.simulated|floatformat:0 }} €</h6>
+                        </div>
+                        <div class="col-6">
+                            <small>{% if show_inflation %}Réel ajusté{% else %}Réel nominal{% endif %}</small>
+                            <h6>{% if show_inflation %}{{ year_data.real_adjusted|floatformat:0 }}{% else %}{{ year_data.real|floatformat:0 }}{% endif %} €</h6>
+                        </div>
+                        <div class="col-6">
+                            <small>Écart</small>
+                            <h6 class="{% if year_data.difference < 0 %}text-danger{% else %}text-success{% endif %}">
+                                {% if show_inflation %}
+                                    {{ year_data.difference_adjusted|floatformat:0 }}
+                                {% else %}
+                                    {{ year_data.difference|floatformat:0 }}
+                                {% endif %} €
+                            </h6>
+                        </div>
+                        <div class="col-6">
+                            <small>Écart %</small>
+                            <h6 class="{% if year_data.difference_percent < 0 %}text-danger{% else %}text-success{% endif %}">
+                                {% if show_inflation %}
+                                    {{ year_data.difference_percent_adjusted|floatformat:1 }}
+                                {% else %}
+                                    {{ year_data.difference_percent|floatformat:1 }}
+                                {% endif %}%
+                            </h6>
+                        </div>
+                        {% if show_inflation %}
+                        <div class="col-12 mt-2">
+                            <small>Inflation</small>
+                            <h6>{{ year_data.inflation_rate|floatformat:1 }}%</h6>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+
+    <!-- Detailed Results Card -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Détail des écarts par compte</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-dark table-sm">
+                    <thead>
+                        <tr>
+                            <th>Compte</th>
+                            <th>Catégorie</th>
+                            {% for year in years %}
+                                <th colspan="{% if show_inflation %}5{% else %}4{% endif %}" class="text-center">{{ year }}</th>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <th></th>
+                            <th></th>
+                            {% for year in years %}
+                                <th class="text-end">Simulé</th>
+                                <th class="text-end">{% if show_inflation %}Réel ajusté{% else %}Réel{% endif %}</th>
+                                {% if show_inflation %}<th class="text-end">Inflation</th>{% endif %}
+                                <th class="text-end">Écart</th>
+                                <th class="text-end">%</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in summary_data %}
+                        <tr>
+                            <td>{{ item.account_name }}</td>
+                            <td>{{ item.category }}</td>
+                            {% for year in years %}
+                            {% with year_data=item.years|get:year %}
+                                <td class="text-end">{{ year_data.simulated|floatformat:0 }} €</td>
+                                <td class="text-end">
+                                    {% if year_data.has_real_data %}
+                                        {% if show_inflation %}
+                                            {{ year_data.real_adjusted|floatformat:0 }}
+                                        {% else %}
+                                            {{ year_data.real|floatformat:0 }}
+                                        {% endif %} €
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                {% if show_inflation %}
+                                <td class="text-end">
+                                    {% if year_data.has_real_data %}
+                                        {{ year_data.inflation_rate|floatformat:1 }}%
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                                <td class="text-end">
+                                    {% if year_data.has_real_data %}
+                                        <span class="{% if year_data.difference < 0 %}text-danger{% else %}text-success{% endif %}">
+                                            {% if show_inflation %}
+                                                {{ year_data.difference_adjusted|floatformat:0 }}
+                                            {% else %}
+                                                {{ year_data.difference|floatformat:0 }}
+                                            {% endif %} €
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if year_data.has_real_data %}
+                                        <span class="{% if year_data.difference_percent < 0 %}text-danger{% else %}text-success{% endif %}">
+                                            {% if show_inflation %}
+                                                {{ year_data.difference_percent_adjusted|floatformat:1 }}
+                                            {% else %}
+                                                {{ year_data.difference_percent|floatformat:1 }}
+                                            {% endif %}%
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            {% endwith %}
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('summaryChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {{ chart_data|safe }},
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' €';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += context.parsed.y.toLocaleString() + ' €';
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

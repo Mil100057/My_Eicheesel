@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .position-card {
+        transition: transform 0.2s;
+    }
+    .position-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'portfolio_list' %}">Portfolios</a></li>
+            <li class="breadcrumb-item active">{{ portfolio.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>{{ portfolio.name }}</h2>
+            <p class="text-muted">{{ portfolio.description }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'add_transaction' portfolio.id %}" class="btn btn-primary">
+                Nouvelle transaction
+            </a>
+        </div>
+    </div>
+
+    <!-- Portfolio Summary -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Résumé du Portfolio</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>Valeur Totale du Marché</h6>
+                    <h3>{{ total_market_value|floatformat:2 }} €</h3>
+                </div>
+                <div class="col-md-4">
+                    <h6>Coût Total</h6>
+                    <h3>{{ total_cost|floatformat:2 }} €</h3>
+                </div>
+                <div class="col-md-4">
+                    <h6>Gain/Perte</h6>
+                    <h3 class="{% if total_gain_loss > 0 %}text-success{% elif total_gain_loss < 0 %}text-danger{% endif %}">
+                        {% if total_gain_loss %}
+                            {{ total_gain_loss|floatformat:2 }} €
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Positions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3>Positions</h3>
+
+            <!-- Actions -->
+            <h4 class="mt-4">Actions</h4>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                {% for position in positions_by_type.STOCK %}
+                <div class="col">
+                    <div class="card position-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ position.stock.symbol }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{ position.stock.name }}</h6>
+                            <div class="position-details mt-3">
+                                <div class="row mb-2">
+                                    <div class="col-7">Quantité:</div>
+                                    <div class="col-5 text-end">{{ position.quantity }}</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-7">Prix moyen:</div>
+                                    <div class="col-5 text-end">{{ position.average_price }} €</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-7">Coût total:</div>
+                                    <div class="col-5 text-end">{{ position.total_cost|floatformat:2 }} €</div>
+                                </div>
+                                {% if position.gain_loss %}
+                                <div class="row">
+                                    <div class="col-7">Gain/Perte:</div>
+                                    <div class="col-5 text-end {% if position.gain_loss > 0 %}text-success{% elif position.gain_loss < 0 %}text-danger{% endif %}">
+                                        {{ position.gain_loss|floatformat:2 }} €
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">Aucune position en actions</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- ETFs -->
+            <h4 class="mt-4">ETFs</h4>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                {% for position in positions_by_type.ETF %}
+                <div class="col">
+                    <div class="card position-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ position.stock.symbol }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{ position.stock.name }}</h6>
+                            <div class="position-details mt-3">
+                                <div class="row mb-2">
+                                    <div class="col-7">Quantité:</div>
+                                    <div class="col-5 text-end">{{ position.quantity }}</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-7">Prix moyen:</div>
+                                    <div class="col-5 text-end">{{ position.average_price }} €</div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-7">Coût total:</div>
+                                    <div class="col-5 text-end">{{ position.total_cost|floatformat:2 }} €</div>
+                                </div>
+                                {% if position.gain_loss %}
+                                <div class="row">
+                                    <div class="col-7">Gain/Perte:</div>
+                                    <div class="col-5 text-end {% if position.gain_loss > 0 %}text-success{% elif position.gain_loss < 0 %}text-danger{% endif %}">
+                                        {{ position.gain_loss|floatformat:2 }} €
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">Aucune position en ETFs</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions -->
+    <div class="row">
+        <div class="col-12">
+            <h3>Dernières Transactions</h3>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Titre</th>
+                            <th>Quantité</th>
+                            <th>Prix</th>
+                            <th>Frais</th>
+                            <th>Total</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in transactions %}
+                        <tr>
+                            <td>{{ transaction.date|date:"d/m/Y" }}</td>
+                            <td>
+                                <span class="badge {% if transaction.transaction_type == 'BUY' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ transaction.get_transaction_type_display }}
+                                </span>
+                            </td>
+                            <td>{{ transaction.stock.symbol }}</td>
+                            <td>{{ transaction.quantity }}</td>
+                            <td>{{ transaction.price }} €</td>
+                            <td>{{ transaction.fees }} €</td>
+                            <td>{{ transaction.total_amount|floatformat:2  }} €</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deleteTransaction({{ transaction.id }})">
+                                    Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">Aucune transaction</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function deleteTransaction(transactionId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette transaction ? Cette action affectera les positions du portfolio.')) {
+            fetch(`/simulation/transaction/${transactionId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Une erreur est survenue');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Une erreur est survenue');
+            });
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Formulaire d'ajout -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Ajouter/Modifier un taux d'inflation</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ field.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphique -->
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Évolution du taux d'inflation</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="inflationChart" style="width: 100%; height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau des taux -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Historique des taux d'inflation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Année</th>
+                                    <th>Taux (%)</th>
+                                    <th>Commentaire</th>
+                                    <th>Dernière mise à jour</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rate in inflation_rates %}
+                                <tr>
+                                    <td>{{ rate.annee }}</td>
+                                    <td>{{ rate.taux_inflation|floatformat:2 }}%</td>
+                                    <td>{{ rate.commentaire|default:"-" }}</td>
+                                    <td>{{ rate.date_mise_a_jour|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="deleteInflationRate({{ rate.annee }})">
+                                            Supprimer
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">Aucun taux d'inflation enregistré</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser le graphique
+    const ctx = document.getElementById('inflationChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {{ chart_data|safe }},
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y.toFixed(2) + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+
+function deleteInflationRate(year) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le taux d'inflation de l'année ${year} ?`)) {
+        fetch(`/simulation/inflation-rates/${year}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert('Erreur lors de la suppression');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'portfolio_list' %}">Portfolios</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'portfolio_detail' portfolio.id %}">{{ portfolio.name }}</a></li>
+            <li class="breadcrumb-item active">Nouvelle Transaction</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Nouvelle Transaction</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.stock.id_for_label }}" class="form-label">Titre</label>
+                                {{ form.stock }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.transaction_type.id_for_label }}" class="form-label">Type de transaction</label>
+                                {{ form.transaction_type }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.quantity.id_for_label }}" class="form-label">Quantité</label>
+                                {{ form.quantity }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.price.id_for_label }}" class="form-label">Prix unitaire</label>
+                                {{ form.price }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.date.id_for_label }}" class="form-label">Date</label>
+                                {{ form.date }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.fees.id_for_label }}" class="form-label">Frais</label>
+                                {{ form.fees }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                            {{ form.notes }}
+                        </div>
+
+                        <div class="text-end">
+                            <a href="{% url 'portfolio_detail' portfolio.id %}" class="btn btn-secondary me-2">Annuler</a>
+                            <button type="submit" class="btn btn-primary">Enregistrer la transaction</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
