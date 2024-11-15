@@ -57,7 +57,7 @@ enter you ENV VARIABLES
 DEBUG=0
 SECRET_KEY=<YOUR_SECURE_KEY>
 API_KEY=<YOUR_AV_API_KEY>
-ALLOWED_HOSTS=localhost,127.0.0.1,<your_host_adress_if_needed> Please look below also
+ALLOWED_HOSTS=localhost,127.0.0.1,<your_host_adress_if_needed>    #Please look below also
 DB_NAME=eicheesel_db
 DB_USERNAME=eicheesel
 DB_PASSWORD=eicheesel
