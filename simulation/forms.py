@@ -40,8 +40,7 @@ class SimulationForm(forms.ModelForm):
             }),
             'montant_initial': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'min': '0',
-                'step': '0.01',
+                'step': '100',
                 'required': True
             }),
             'currency': forms.Select(attrs={
@@ -61,7 +60,7 @@ class SimulationForm(forms.ModelForm):
             }),
             'annee_depart': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'min': '2020',
+                'min': '2000',
                 'max': '2074',
                 'required': True
             }),
@@ -139,7 +138,7 @@ class AnnualInflationRateForm(forms.ModelForm):
         widgets = {
             'annee': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'min': '1900',
+                'min': '2000',
                 'max': '2100',
             }),
             'taux_inflation': forms.NumberInput(attrs={
