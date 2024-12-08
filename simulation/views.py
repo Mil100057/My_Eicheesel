@@ -318,8 +318,8 @@ def validate_simulation_inputs(simulation: Simulation) -> bool:
 
     try:
         # Ensure positive values
-        if simulation.montant_initial < 0 or simulation.montant_fixe_annuel < 0:
-            return False
+        #if simulation.montant_initial < 0 or simulation.montant_fixe_annuel < 0:
+        #    return False
 
         # Ensure reasonable rate range (-100% to +100%)
         if not -100 <= simulation.taux_rentabilite <= 100:
