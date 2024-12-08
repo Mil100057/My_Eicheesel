@@ -66,7 +66,6 @@ class SimulationForm(forms.ModelForm):
             }),
             'montant_fixe_annuel': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'min': '0',
                 'step': '0.01',
                 'required': True
             }),
