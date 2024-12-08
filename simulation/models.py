@@ -11,7 +11,8 @@ class Category(models.Model):
         "Courant": "Courant",
         "Epargne Financière": "Ep.Financière",
         "Assurance Vie": "Assurance Vie",
-        "Epargne Entreprise": "Epargne Entreprise"
+        "Epargne Entreprise": "Epargne Entreprise",
+        "Immobilier": "Immobilier"
     }
     category = models.CharField(max_length=64, choices=COMPTE_TYPE, default='Courant')
 
